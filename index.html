@@ -258,10 +258,24 @@ window.addEventListener(
 
 function findMachineOffline() {
 
+  const codeInput =
+    document.getElementById("machineCode");
+
+  const machineNameInput =
+    document.getElementById("machineName");
+
+  const departmentInput =
+    document.getElementById("department");
+
+  const frequencyInput =
+    document.getElementById("frequency");
+
+
+  // ------------------------------
+  // รหัสที่รับมาจาก QR / ผู้ใช้งาน
+  // ------------------------------
   const code =
-    document
-      .getElementById("machineCode")
-      .value
+    String(codeInput.value || "")
       .trim()
       .toUpperCase();
 
@@ -271,30 +285,71 @@ function findMachineOffline() {
   }
 
 
-  const machines =
-    JSON.parse(
-      localStorage.getItem(
-        "PM_MACHINE_MASTER"
-      ) || "[]"
-    );
+  // ------------------------------
+  // อ่าน Machine Master ในเครื่อง
+  // ------------------------------
+  let machines = [];
 
+  try {
 
-  if (machines.length === 0) {
+    machines =
+      JSON.parse(
+        localStorage.getItem(
+          "PM_MACHINE_MASTER"
+        ) || "[]"
+      );
+
+  } catch (error) {
 
     alert(
-      "ยังไม่มี Machine Master ในอุปกรณ์"
+      "Machine Master ในอุปกรณ์มีปัญหา\n" +
+      error.message
     );
 
     return;
   }
 
 
+  if (!Array.isArray(machines) ||
+      machines.length === 0) {
+
+    alert(
+      "ยังไม่มี Machine Master ในอุปกรณ์\n\n" +
+      "กรุณาต่อ Internet แล้วกด " +
+      "'อัปเดตข้อมูลเครื่องจักร'"
+    );
+
+    return;
+  }
+
+
+  // ------------------------------
+  // ทำรหัสให้เป็นรูปแบบเดียวกัน
+  // EPC-007 / EPC007 / EPC 007
+  // จะถือเป็นรหัสเดียวกัน
+  // ------------------------------
+  function normalizeCode(value) {
+
+    return String(value || "")
+      .trim()
+      .toUpperCase()
+      .replace(/[\s-]/g, "");
+
+  }
+
+
+  const searchCode =
+    normalizeCode(code);
+
+
+  // ------------------------------
+  // ค้นหาเครื่องจักร
+  // ------------------------------
   const machine =
     machines.find(function(item) {
 
-      return String(item.code)
-        .trim()
-        .toUpperCase() === code;
+      return normalizeCode(item.code) ===
+             searchCode;
 
     });
 
@@ -303,175 +358,93 @@ function findMachineOffline() {
 
     alert(
       "ไม่พบรหัสเครื่องจักร: " +
-      code
+      code +
+      "\n\nMachine Master มี " +
+      machines.length +
+      " รายการ"
     );
 
     return;
   }
 
 
-  document.getElementById(
-    "machineName"
-  ).value = machine.name || "";
+  // ------------------------------
+  // เติมข้อมูล
+  // ------------------------------
+  codeInput.value =
+    machine.code || code;
+
+  machineNameInput.value =
+    machine.name || "";
+
+  departmentInput.value =
+    machine.dept || "";
 
 
-  document.getElementById(
-    "department"
-  ).value = machine.dept || "";
+  // ------------------------------
+  // ความถี่ PM
+  // ------------------------------
+  const frequency =
+    String(
+      machine.frequency || ""
+    ).trim();
 
 
-  document.getElementById(
-    "frequency"
-  ).value = machine.frequency || "";
-}
+  if (frequency) {
+
+    // ถ้า option นี้ยังไม่มี ให้เพิ่มให้อัตโนมัติ
+    const optionExists =
+      Array.from(
+        frequencyInput.options
+      ).some(function(option) {
+
+        return option.value === frequency;
+
+      });
 
 
-// =============================================
-// บันทึก PM Offline
-// =============================================
+    if (!optionExists) {
 
-function saveOffline() {
+      const newOption =
+        document.createElement("option");
 
-  const machineCode =
-    document
-      .getElementById("machineCode")
-      .value
-      .trim();
+      newOption.value =
+        frequency;
+
+      newOption.textContent =
+        frequency;
+
+      frequencyInput.appendChild(
+        newOption
+      );
+    }
 
 
-  if (!machineCode) {
-
-    alert(
-      "กรุณากรอกรหัสเครื่องจักร"
-    );
-
-    return;
+    frequencyInput.value =
+      frequency;
   }
 
 
-  const now =
-    new Date();
-
-
-  const pmId =
-
-    "PM-" +
-
-    machineCode + "-" +
-
-    now.getFullYear() +
-
-    String(
-      now.getMonth() + 1
-    ).padStart(2, "0") +
-
-    String(
-      now.getDate()
-    ).padStart(2, "0") +
-
-    "-" +
-
-    String(
-      now.getHours()
-    ).padStart(2, "0") +
-
-    String(
-      now.getMinutes()
-    ).padStart(2, "0") +
-
-    String(
-      now.getSeconds()
-    ).padStart(2, "0");
-
-
-  const data = {
-
-    pmId: pmId,
-
-    dateTime:
-      now.toLocaleString("th-TH"),
-
-    machineCode:
-      machineCode,
-
-    machineName:
-      document.getElementById(
-        "machineName"
-      ).value,
-
-    department:
-      document.getElementById(
-        "department"
-      ).value,
-
-    inspector:
-      document.getElementById(
-        "inspector"
-      ).value,
-
-    frequency:
-      document.getElementById(
-        "frequency"
-      ).value,
-
-    pmResult:
-      document.getElementById(
-        "pmResult"
-      ).value,
-
-    problemSummary:
-      document.getElementById(
-        "problemSummary"
-      ).value,
-
-    problem:
-      document.getElementById(
-        "problem"
-      ).value,
-
-    urgency:
-      document.getElementById(
-        "urgency"
-      ).value,
-
-    solution:
-      document.getElementById(
-        "solution"
-      ).value,
-
-    syncStatus:
-      "รอ Sync"
-  };
-
-
-  let offlineData =
-    JSON.parse(
-      localStorage.getItem(
-        "PM_OFFLINE_DATA"
-      ) || "[]"
+  // ------------------------------
+  // แสดงสถานะ
+  // ------------------------------
+  const status =
+    document.getElementById(
+      "masterStatus"
     );
 
 
-  offlineData.push(data);
+  if (status) {
 
-
-  localStorage.setItem(
-    "PM_OFFLINE_DATA",
-    JSON.stringify(offlineData)
-  );
-
-
-  updateOfflineCount();
-
-
-  alert(
-    "บันทึก Offline สำเร็จ\n\n" +
-    "รหัสเครื่องจักร: " +
-    machineCode +
-    "\n\nข้อมูลถูกเก็บไว้ในอุปกรณ์"
-  );
+    status.innerHTML =
+      "✓ พบข้อมูล " +
+      machine.code +
+      " | " +
+      machine.dept +
+      " | " +
+      frequency;
+  }
 }
-
 
 // =============================================
 // ดูรายการรอ Sync
@@ -577,7 +550,7 @@ window.onload = function() {
 
       findMachineOffline();
 
-    }, 500);
+    }, 1000);
   }
 };
 
