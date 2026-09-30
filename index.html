@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
+  <title>PM Offline</title>
+
+  <link rel="manifest" href="manifest.json">
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #f3f6f9;
+      margin: 0;
+      padding: 20px;
+    }
+
+    .box {
+      max-width: 600px;
+      margin: auto;
+      background: white;
+      padding: 25px;
+      border-radius: 15px;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.12);
+    }
+
+    h2 {
+      text-align: center;
+      color: #1565c0;
+    }
+
+    .status {
+      margin-top: 15px;
+      padding: 10px;
+      text-align: center;
+      border-radius: 8px;
+      background: #fff3cd;
+    }
+
+    label {
+      display: block;
+      margin-top: 15px;
+      font-weight: bold;
+    }
+
+    input,
+    select,
+    textarea {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 12px;
+      margin-top: 5px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+
+    textarea {
+      min-height: 80px;
+    }
+
+    button {
+      width: 100%;
+      margin-top: 20px;
+      padding: 14px;
+      border: 0;
+      border-radius: 8px;
+      color: white;
+      font-size: 17px;
+      cursor: pointer;
+    }
+
+    .save {
+      background: #1565c0;
+    }
+
+    .view {
+      background: #607d8b;
+    }
+
+    .online {
+      background: #e8f5e9;
+    }
+
+    .offline {
+      background: #ffebee;
+    }
+
+    #offlineStatus {
+      margin-top: 15px;
+      text-align: center;
+      font-weight: bold;
+    }
+  </style>
+</head>
+
+
+<body>
+
+<div class="box">
+
+  <h2>ระบบ PM เครื่องจักร</h2>
+
+  <div id="networkStatus" class="status">
+    กำลังตรวจสอบ Internet...
+  </div>
+
+
+  <label>รหัสเครื่องจักร</label>
+
+  <input id="machineCode"
+         placeholder="เช่น EPC-007"
+         onchange="findMachineOffline()">
+
+
+  <label>ชื่อเครื่องจักร</label>
+
+  <input id="machineName"
+         placeholder="ชื่อเครื่องจักร">
+
+
+  <label>แผนก</label>
+
+  <input id="department"
+         placeholder="เช่น PW">
+
+
+  <label>ผู้ตรวจเช็ค</label>
+
+  <input id="inspector"
+         placeholder="ชื่อผู้ตรวจเช็ค">
+
+
+  <label>ความถี่ในการ PM</label>
+
+  <select id="frequency">
+    <option value="">-- เลือก --</option>
+    <option>1 เดือน</option>
+    <option>3 เดือน</option>
+    <option>6 เดือน</option>
+    <option>1 ปี</option>
+  </select>
+
+
+  <label>สรุปผลการ PM</label>
+
+  <select id="pmResult">
+    <option value="">-- เลือก --</option>
+    <option>ปกติ</option>
+    <option>ผิดปกติ</option>
+  </select>
+
+
+  <label>สรุปปัญหา</label>
+
+  <select id="problemSummary">
+    <option value="">-- เลือก --</option>
+    <option>ไม่พบปัญหา</option>
+    <option>พบปัญหา</option>
+  </select>
+
+
+  <label>ปัญหาที่พบ</label>
+
+  <textarea id="problem"></textarea>
+
+
+  <label>ระดับความเร่งด่วน</label>
+
+  <select id="urgency">
+    <option value="">-- เลือก --</option>
+    <option>ต่ำ</option>
+    <option>ปานกลาง</option>
+    <option>สูง</option>
+    <option>เร่งด่วน</option>
+  </select>
+
+
+  <label>รายละเอียดการแก้ไข</label>
+
+  <textarea id="solution"></textarea>
+
+
+  <button class="save"
+          onclick="saveOffline()">
+    บันทึก Offline
+  </button>
+
+
+  <button class="view"
+          onclick="showOfflineData()">
+    ดูข้อมูลที่รอ Sync
+  </button>
+
+
+  <div id="offlineStatus">
+  </div>
+
+</div>
+
+
+<script>
+
+// =============================================
+// ตรวจสถานะ Internet
+// =============================================
+
+function updateNetworkStatus() {
+
+  const box =
+    document.getElementById("networkStatus");
+
+  if (navigator.onLine) {
+
+    box.innerHTML =
+      "● Online - เชื่อมต่อ Internet";
+
+    box.className =
+      "status online";
+
+  } else {
+
+    box.innerHTML =
+      "● Offline - ไม่มี Internet";
+
+    box.className =
+      "status offline";
+  }
+}
+
+
+window.addEventListener(
+  "online",
+  updateNetworkStatus
+);
+
+window.addEventListener(
+  "offline",
+  updateNetworkStatus
+);
+
+
+// =============================================
+// อ่าน Machine Master ที่มีในเครื่อง
+// =============================================
+
+function findMachineOffline() {
+
+  const code =
+    document
+      .getElementById("machineCode")
+      .value
+      .trim()
+      .toUpperCase();
+
+
+  if (!code) {
+    return;
+  }
+
+
+  const machines =
+    JSON.parse(
+      localStorage.getItem(
+        "PM_MACHINE_MASTER"
+      ) || "[]"
+    );
+
+
+  if (machines.length === 0) {
+
+    alert(
+      "ยังไม่มี Machine Master ในอุปกรณ์"
+    );
+
+    return;
+  }
+
+
+  const machine =
+    machines.find(function(item) {
+
+      return String(item.code)
+        .trim()
+        .toUpperCase() === code;
+
+    });
+
+
+  if (!machine) {
+
+    alert(
+      "ไม่พบรหัสเครื่องจักร: " +
+      code
+    );
+
+    return;
+  }
+
+
+  document.getElementById(
+    "machineName"
+  ).value = machine.name || "";
+
+
+  document.getElementById(
+    "department"
+  ).value = machine.dept || "";
+
+
+  document.getElementById(
+    "frequency"
+  ).value = machine.frequency || "";
+}
+
+
+// =============================================
+// บันทึก PM Offline
+// =============================================
+
+function saveOffline() {
+
+  const machineCode =
+    document
+      .getElementById("machineCode")
+      .value
+      .trim();
+
+
+  if (!machineCode) {
+
+    alert(
+      "กรุณากรอกรหัสเครื่องจักร"
+    );
+
+    return;
+  }
+
+
+  const now =
+    new Date();
+
+
+  const pmId =
+
+    "PM-" +
+
+    machineCode + "-" +
+
+    now.getFullYear() +
+
+    String(
+      now.getMonth() + 1
+    ).padStart(2, "0") +
+
+    String(
+      now.getDate()
+    ).padStart(2, "0") +
+
+    "-" +
+
+    String(
+      now.getHours()
+    ).padStart(2, "0") +
+
+    String(
+      now.getMinutes()
+    ).padStart(2, "0") +
+
+    String(
+      now.getSeconds()
+    ).padStart(2, "0");
+
+
+  const data = {
+
+    pmId: pmId,
+
+    dateTime:
+      now.toLocaleString("th-TH"),
+
+    machineCode:
+      machineCode,
+
+    machineName:
+      document.getElementById(
+        "machineName"
+      ).value,
+
+    department:
+      document.getElementById(
+        "department"
+      ).value,
+
+    inspector:
+      document.getElementById(
+        "inspector"
+      ).value,
+
+    frequency:
+      document.getElementById(
+        "frequency"
+      ).value,
+
+    pmResult:
+      document.getElementById(
+        "pmResult"
+      ).value,
+
+    problemSummary:
+      document.getElementById(
+        "problemSummary"
+      ).value,
+
+    problem:
+      document.getElementById(
+        "problem"
+      ).value,
+
+    urgency:
+      document.getElementById(
+        "urgency"
+      ).value,
+
+    solution:
+      document.getElementById(
+        "solution"
+      ).value,
+
+    syncStatus:
+      "รอ Sync"
+  };
+
+
+  let offlineData =
+    JSON.parse(
+      localStorage.getItem(
+        "PM_OFFLINE_DATA"
+      ) || "[]"
+    );
+
+
+  offlineData.push(data);
+
+
+  localStorage.setItem(
+    "PM_OFFLINE_DATA",
+    JSON.stringify(offlineData)
+  );
+
+
+  updateOfflineCount();
+
+
+  alert(
+    "บันทึก Offline สำเร็จ\n\n" +
+    "รหัสเครื่องจักร: " +
+    machineCode +
+    "\n\nข้อมูลถูกเก็บไว้ในอุปกรณ์"
+  );
+}
+
+
+// =============================================
+// ดูรายการรอ Sync
+// =============================================
+
+function showOfflineData() {
+
+  const offlineData =
+    JSON.parse(
+      localStorage.getItem(
+        "PM_OFFLINE_DATA"
+      ) || "[]"
+    );
+
+
+  if (offlineData.length === 0) {
+
+    alert(
+      "ไม่มีข้อมูลรอ Sync"
+    );
+
+    return;
+  }
+
+
+  let message =
+    "ข้อมูลรอ Sync: " +
+    offlineData.length +
+    " รายการ\n\n";
+
+
+  offlineData.forEach(
+    function(item, index) {
+
+      message +=
+        (index + 1) +
+        ". " +
+        item.machineCode +
+        "\n" +
+        item.dateTime +
+        "\n\n";
+    }
+  );
+
+
+  alert(message);
+}
+
+
+// =============================================
+// จำนวนรายการรอ Sync
+// =============================================
+
+function updateOfflineCount() {
+
+  const offlineData =
+    JSON.parse(
+      localStorage.getItem(
+        "PM_OFFLINE_DATA"
+      ) || "[]"
+    );
+
+
+  document.getElementById(
+    "offlineStatus"
+  ).innerHTML =
+
+    "ข้อมูลรอ Sync: " +
+    offlineData.length +
+    " รายการ";
+}
+
+
+// =============================================
+// เริ่มต้นระบบ
+// =============================================
+
+window.onload = function() {
+
+  updateNetworkStatus();
+
+  updateOfflineCount();
+};
+
+
+// =============================================
+// Service Worker
+// =============================================
+
+if ("serviceWorker" in navigator) {
+
+  window.addEventListener(
+    "load",
+    function() {
+
+      navigator.serviceWorker
+        .register("./service-worker.js")
+        .catch(function(error) {
+
+          console.log(
+            "Service Worker Error:",
+            error
+          );
+
+        });
+
+    }
+  );
+}
+
+</script>
+
+</body>
+</html>
