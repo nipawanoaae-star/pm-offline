@@ -551,12 +551,35 @@ function updateOfflineCount() {
 
 window.onload = function() {
 
-  // ตรวจสถานะ Internet
   updateNetworkStatus();
-
-  // แสดงจำนวนข้อมูลรอ Sync
   updateOfflineCount();
 
+  // รับรหัสเครื่องจักรจาก QR
+  const params =
+    new URLSearchParams(window.location.search);
+
+  const machineCode =
+    params.get("code");
+
+  if (machineCode) {
+
+    const code =
+      machineCode
+        .trim()
+        .toUpperCase();
+
+    document.getElementById(
+      "machineCode"
+    ).value = code;
+
+    // รอให้หน้า Form พร้อมก่อน แล้วค้นหา Master
+    setTimeout(function() {
+
+      findMachineOffline();
+
+    }, 500);
+  }
+};
 
   // ==========================================
   // รับรหัสเครื่องจักรจาก QR Code
