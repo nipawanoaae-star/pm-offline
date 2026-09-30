@@ -560,38 +560,7 @@ window.onload = function() {
   }
 };
 
-  // ==========================================
-  // รับรหัสเครื่องจักรจาก QR Code
-  // ตัวอย่าง ?code=EPC-007
-  // ==========================================
 
-  const params =
-    new URLSearchParams(
-      window.location.search
-    );
-
-  const machineCode =
-    params.get("code");
-
-
-  if (machineCode) {
-
-    const code =
-      machineCode
-        .trim()
-        .toUpperCase();
-
-
-    // ใส่รหัสลงในช่อง
-    document.getElementById(
-      "machineCode"
-    ).value = code;
-
-
-    // ค้นข้อมูลจาก Machine Master
-    findMachineOffline();
-  }
-};
 // =============================================
 // อัปเดต Machine Master จาก PM Schedule
 // =============================================
