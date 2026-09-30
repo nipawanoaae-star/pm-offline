@@ -209,7 +209,11 @@
           onclick="showOfflineData()">
     ดูข้อมูลที่รอ Sync
   </button>
-
+<button type="button"
+        onclick="syncOfflineData()"
+        style="background:#2e7d32;">
+  Sync ข้อมูล
+</button>
 
   <div id="offlineStatus">
   </div>
@@ -662,6 +666,112 @@ async function updateMachineMaster() {
       error.message
     );
   }
+}
+  // =============================================
+// Sync ข้อมูล Offline ไป Google Sheets
+// =============================================
+async function syncOfflineData() {
+
+  if (!navigator.onLine) {
+    alert(
+      "ไม่มี Internet\n\n" +
+      "กรุณาเชื่อมต่อ Internet ก่อน Sync"
+    );
+    return;
+  }
+
+  let offlineData =
+    JSON.parse(
+      localStorage.getItem(
+        "PM_OFFLINE_DATA"
+      ) || "[]"
+    );
+
+  if (offlineData.length === 0) {
+    alert("ไม่มีข้อมูลรอ Sync");
+    return;
+  }
+
+  // ใส่ URL /exec ตัวเดียวกับ Machine Master
+  const SYNC_URL =
+    "https://script.google.com/macros/s/AKfycbyUxh4XXPWNY05erqCN9cwpJCoT52YtBzQ5aPzMvyTL7yZXmWRNMuxxE6RlOnB8L68wyw/exec;
+
+  let successCount = 0;
+  let duplicateCount = 0;
+  let failedData = [];
+
+  for (const item of offlineData) {
+
+    try {
+
+      const response =
+        await fetch(
+          SYNC_URL,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type":
+                "text/plain;charset=utf-8"
+            },
+            body:
+              JSON.stringify(item)
+          }
+        );
+
+      if (!response.ok) {
+        throw new Error(
+          "HTTP " + response.status
+        );
+      }
+
+      const result =
+        await response.json();
+
+      if (result.success) {
+
+        if (result.duplicate) {
+          duplicateCount++;
+        } else {
+          successCount++;
+        }
+
+      } else {
+
+        failedData.push(item);
+      }
+
+    } catch (error) {
+
+      console.error(
+        "Sync Error:",
+        item.pmId,
+        error
+      );
+
+      failedData.push(item);
+    }
+  }
+
+  // เก็บไว้เฉพาะรายการที่ Sync ไม่สำเร็จ
+  localStorage.setItem(
+    "PM_OFFLINE_DATA",
+    JSON.stringify(failedData)
+  );
+
+  updateOfflineCount();
+
+  alert(
+    "Sync เสร็จสิ้น\n\n" +
+    "สำเร็จ: " +
+    successCount +
+    " รายการ\n" +
+    "ข้อมูลซ้ำ: " +
+    duplicateCount +
+    " รายการ\n" +
+    "ไม่สำเร็จ: " +
+    failedData.length +
+    " รายการ"
+  );
 }
 function testMachineMaster() {
 
