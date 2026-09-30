@@ -108,6 +108,11 @@
   </div>
 <button type="button"
         onclick="updateMachineMaster()"
+  <button type="button"
+        onclick="testMachineMaster()"
+        style="background:#ef6c00;">
+  ทดสอบ Machine Master
+</button>
         style="background:#6a1b9a;">
   อัปเดตข้อมูลเครื่องจักร
 </button>
@@ -688,7 +693,71 @@ async function updateMachineMaster() {
     );
   }
 }
+function testMachineMaster() {
 
+  const raw =
+    localStorage.getItem("PM_MACHINE_MASTER");
+
+  if (!raw) {
+    alert("ไม่พบ PM_MACHINE_MASTER ในเครื่อง");
+    return;
+  }
+
+  try {
+
+    const machines =
+      JSON.parse(raw);
+
+    const epc007 =
+      machines.find(function(item) {
+
+        return String(item.code || "")
+          .trim()
+          .toUpperCase()
+          .replace(/[\s-]/g, "") === "EPC007";
+
+      });
+
+
+    if (!epc007) {
+
+      alert(
+        "มี Machine Master " +
+        machines.length +
+        " รายการ\n\n" +
+        "แต่ค้นหา EPC-007 ไม่พบ"
+      );
+
+      return;
+    }
+
+
+    alert(
+      "พบ EPC-007 แล้ว\n\n" +
+      "จำนวน Master: " +
+      machines.length +
+      "\n\n" +
+      "Code: " +
+      epc007.code +
+      "\n" +
+      "Name: " +
+      epc007.name +
+      "\n" +
+      "Dept: " +
+      epc007.dept +
+      "\n" +
+      "Frequency: " +
+      epc007.frequency
+    );
+
+  } catch (error) {
+
+    alert(
+      "อ่าน Machine Master ไม่สำเร็จ\n\n" +
+      error.message
+    );
+  }
+}
 // =============================================
 // Service Worker
 // =============================================
