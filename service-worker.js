@@ -1,5 +1,4 @@
-const CACHE_NAME = "pm-offline-v4";
-
+const CACHE_NAME = "pm-offline-v5";
 const FILES_TO_CACHE = [
   "./",
   "./index.html",
