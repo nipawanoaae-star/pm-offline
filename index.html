@@ -106,7 +106,17 @@
   <div id="networkStatus" class="status">
     กำลังตรวจสอบ Internet...
   </div>
+<button type="button"
+        onclick="updateMachineMaster()"
+        style="background:#6a1b9a;">
+  อัปเดตข้อมูลเครื่องจักร
+</button>
 
+<div id="masterStatus"
+     style="margin-top:10px;
+            text-align:center;
+            font-weight:bold;">
+</div>
 
   <label>รหัสเครื่องจักร</label>
 
@@ -545,7 +555,108 @@ window.onload = function() {
 
   updateOfflineCount();
 };
+// =============================================
+// อัปเดต Machine Master จาก PM Schedule
+// =============================================
 
+async function updateMachineMaster() {
+
+  if (!navigator.onLine) {
+
+    alert(
+      "ไม่มี Internet\n\n" +
+      "กรุณาเชื่อมต่อ Internet ก่อนอัปเดตข้อมูลเครื่องจักร"
+    );
+
+    return;
+  }
+
+
+  const status =
+    document.getElementById("masterStatus");
+
+  status.innerHTML =
+    "กำลังดาวน์โหลดข้อมูลเครื่องจักร...";
+
+
+  try {
+
+    // URL ของ Google Apps Script Web App
+    const API_URL =
+      "https://script.google.com/macros/s/AKfycbyUxh4XXPWNY05erqCN9cwpJCoT52YtBzQ5aPzMvyTL7yZXmWRNMuxxE6RlOnB8L68wyw/exec?action=machines"
+;
+
+
+    const response =
+      await fetch(API_URL);
+
+
+    if (!response.ok) {
+
+      throw new Error(
+        "HTTP " + response.status
+      );
+    }
+
+
+    const result =
+      await response.json();
+
+
+    if (!result.success) {
+
+      throw new Error(
+        result.message ||
+        "ไม่สามารถโหลด Machine Master ได้"
+      );
+    }
+
+
+    // บันทึก Machine Master ลงในอุปกรณ์
+    localStorage.setItem(
+      "PM_MACHINE_MASTER",
+      JSON.stringify(result.machines)
+    );
+
+
+    // บันทึกวันเวลาที่อัปเดต
+    const updateTime =
+      new Date().toLocaleString("th-TH");
+
+
+    localStorage.setItem(
+      "PM_MACHINE_MASTER_UPDATE",
+      updateTime
+    );
+
+
+    status.innerHTML =
+      "ข้อมูลเครื่องจักร: " +
+      result.count +
+      " รายการ | อัปเดต " +
+      updateTime;
+
+
+    alert(
+      "อัปเดตข้อมูลเครื่องจักรสำเร็จ\n\n" +
+      "จำนวน: " +
+      result.count +
+      " รายการ"
+    );
+
+
+  } catch (error) {
+
+    status.innerHTML =
+      "อัปเดตข้อมูลเครื่องจักรไม่สำเร็จ";
+
+
+    alert(
+      "ไม่สามารถอัปเดต Machine Master\n\n" +
+      error.message
+    );
+  }
+}
 
 // =============================================
 // Service Worker
