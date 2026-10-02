@@ -253,7 +253,29 @@ function updateNetworkStatus() {
 
 window.addEventListener(
   "online",
-  updateNetworkStatus
+  function() {
+
+    // อัปเดตสถานะเป็น Online
+    updateNetworkStatus();
+
+    // ตรวจว่ามีข้อมูล PM รอ Sync หรือไม่
+    const offlineData =
+      JSON.parse(
+        localStorage.getItem(
+          "PM_OFFLINE_DATA"
+        ) || "[]"
+      );
+
+    // ถ้ามีข้อมูลค้าง ให้ Sync อัตโนมัติ
+    if (offlineData.length > 0) {
+
+      setTimeout(function() {
+
+        syncOfflineData();
+
+      }, 2000);
+    }
+  }
 );
 
 window.addEventListener(
