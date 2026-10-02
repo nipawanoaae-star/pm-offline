@@ -933,18 +933,28 @@ async function syncOfflineData() {
       const result =
         await response.json();
 
-      if (result.success) {
+     if (result.success) {
 
-        if (result.duplicate) {
-          duplicateCount++;
-        } else {
-          successCount++;
-        }
+  if (result.duplicate) {
+    duplicateCount++;
+  } else {
+    successCount++;
+  }
 
-      } else {
+} else {
 
-        failedData.push(item);
-      }
+  console.error(
+    "API Sync Error:",
+    result.message
+  );
+
+  alert(
+    "API Sync ไม่สำเร็จ\n\n" +
+    (result.message || "ไม่ทราบสาเหตุ")
+  );
+
+  failedData.push(item);
+}
 
     } catch (error) {
 
