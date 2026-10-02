@@ -481,7 +481,191 @@ function findMachineOffline() {
 // =============================================
 // ดูรายการรอ Sync
 // =============================================
+// =============================================
+// บันทึกข้อมูล PM แบบ Offline
+// =============================================
+function saveOffline() {
 
+  // -----------------------------
+  // อ่านข้อมูลจาก Form
+  // -----------------------------
+  const machineCode =
+    document.getElementById("machineCode")
+      .value
+      .trim();
+
+  const machineName =
+    document.getElementById("machineName")
+      .value
+      .trim();
+
+  const department =
+    document.getElementById("department")
+      .value
+      .trim();
+
+  const inspector =
+    document.getElementById("inspector")
+      .value
+      .trim();
+
+  const frequency =
+    document.getElementById("frequency")
+      .value;
+
+  const pmResult =
+    document.getElementById("pmResult")
+      .value;
+
+  const problemSummary =
+    document.getElementById("problemSummary")
+      .value;
+
+  const problem =
+    document.getElementById("problem")
+      .value
+      .trim();
+
+  const urgency =
+    document.getElementById("urgency")
+      .value;
+
+  const solution =
+    document.getElementById("solution")
+      .value
+      .trim();
+
+
+  // -----------------------------
+  // ตรวจข้อมูลที่จำเป็น
+  // -----------------------------
+  if (!machineCode) {
+    alert("กรุณาระบุรหัสเครื่องจักร");
+    return;
+  }
+
+  if (!inspector) {
+    alert("กรุณาระบุผู้ตรวจเช็ค");
+    return;
+  }
+
+  if (!pmResult) {
+    alert("กรุณาเลือกสรุปผลการ PM");
+    return;
+  }
+
+  if (!problemSummary) {
+    alert("กรุณาเลือกสรุปปัญหา");
+    return;
+  }
+
+
+  // -----------------------------
+  // สร้าง PM ID ไม่ให้ข้อมูลซ้ำ
+  // -----------------------------
+  const now = new Date();
+
+  const pmId =
+    machineCode +
+    "-" +
+    now.getTime();
+
+
+  // -----------------------------
+  // วันที่/เวลาที่ทำ PM
+  // -----------------------------
+  const dateTime =
+    now.toLocaleString("th-TH");
+
+
+  // -----------------------------
+  // สร้างข้อมูล PM
+  // -----------------------------
+  const pmData = {
+
+    pmId: pmId,
+
+    dateTime: dateTime,
+
+    machineCode: machineCode,
+
+    machineName: machineName,
+
+    department: department,
+
+    inspector: inspector,
+
+    frequency: frequency,
+
+    pmResult: pmResult,
+
+    problemSummary: problemSummary,
+
+    problem: problem,
+
+    urgency: urgency,
+
+    solution: solution,
+
+    image: ""
+
+  };
+
+
+  // -----------------------------
+  // อ่านข้อมูล Offline เดิม
+  // -----------------------------
+  let offlineData = [];
+
+  try {
+
+    offlineData =
+      JSON.parse(
+        localStorage.getItem(
+          "PM_OFFLINE_DATA"
+        ) || "[]"
+      );
+
+  } catch (error) {
+
+    offlineData = [];
+  }
+
+
+  // -----------------------------
+  // เพิ่มรายการใหม่
+  // -----------------------------
+  offlineData.push(pmData);
+
+
+  // -----------------------------
+  // บันทึกลงเครื่อง
+  // -----------------------------
+  localStorage.setItem(
+    "PM_OFFLINE_DATA",
+    JSON.stringify(offlineData)
+  );
+
+
+  // -----------------------------
+  // อัปเดตจำนวนรายการ
+  // -----------------------------
+  updateOfflineCount();
+
+
+  // -----------------------------
+  // แจ้งผล
+  // -----------------------------
+  alert(
+    "บันทึกข้อมูล Offline สำเร็จ\n\n" +
+    "รหัสเครื่อง: " +
+    machineCode +
+    "\n" +
+    "ข้อมูลรอ Sync: " +
+    offlineData.length +
+    " รายการ"
+  );
+}
 function showOfflineData() {
 
   const offlineData =
